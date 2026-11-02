@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f5f2">
+  <title>Motorlisto — Rastreador de coches</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #1b2926;
+      --muted: #71807a;
+      --line: #e4e9e5;
+      --paper: #fff;
+      --canvas: #f5f7f4;
+      --green: #176b51;
+      --green-dark: #10513d;
+      --green-soft: #e8f3ed;
+      --orange: #e28b54;
+      --shadow: 0 12px 32px rgb(22 46 36 / 7%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--canvas);
+    }
+
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+
+    .topbar {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 max(28px, calc((100vw - 1320px) / 2));
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-size: 19px;
+      font-weight: 780;
+      letter-spacing: -0.7px;
+    }
+
+    .brand-mark {
+      display: grid;
+      place-items: center;
+      width: 35px;
+      height: 35px;
+      color: #fff;
+      background: var(--green);
+      border-radius: 11px;
+    }
+
+    .topbar-note {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .page {
+      width: min(1320px, calc(100% - 56px));
+      margin: 0 auto;
+      padding: 38px 0 64px;
+    }
+
+    .hero {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+      margin-bottom: 27px;
+    }
+
+    .eyebrow {
+      margin: 0 0 9px;
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 780;
+      letter-spacing: 1.35px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(29px, 4vw, 42px);
+      line-height: 1.12;
+      letter-spacing: -1.8px;
+    }
+
+    .subtitle {
+      margin: 11px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .primary-button, .secondary-button, .tab, .icon-button {
+      border: 0;
+      transition: background .16s ease, transform .16s ease;
+    }
+
+    .primary-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 45px;
+      padding: 0 17px;
+      color: #fff;
+      background: var(--green);
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .primary-button:hover { background: var(--green-dark); }
+    .primary-button:active, .secondary-button:active { transform: scale(.98); }
+
+    .notice {
+      display: flex;
+      align-items: flex-start;
+      gap: 11px;
+      margin-bottom: 22px;
+      padding: 13px 15px;
+      color: #655640;
+      background: #fff7e9;
+      border: 1px solid #f1e4c9;
+      border-radius: 11px;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .notice strong { color: #58452a; }
+    .notice-icon { flex: 0 0 auto; color: #bd7936; }
+
+    .filter-panel {
+      padding: 19px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+    }
+
+    .filter-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+
+    .filter-heading h2 {
+      margin: 0;
+      font-size: 14px;
+      letter-spacing: -.2px;
+    }
+
+    .text-button {
+      padding: 4px 0;
+      color: var(--green);
+      background: transparent;
+      border: 0;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .filters {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(110px, 1fr));
+      gap: 11px;
+    }
+
+    .field { min-width: 0; }
+    .field label {
+      display: block;
+      margin-bottom: 7px;
+      color: #596760;
+      font-size: 11px;
+      font-weight: 690;
+    }
+
+    .field select, .field input, .range input {
+      width: 100%;
+      height: 40px;
+      padding: 0 11px;
+      color: var(--ink);
+      background: #fbfcfb;
+      border: 1px solid #dfe5e0;
+      border-radius: 8px;
+      outline: none;
+      font-size: 12px;
+    }
+
+    .field select:focus, .field input:focus, .range input:focus {
+      border-color: #80ae9b;
+      box-shadow: 0 0 0 3px rgb(23 107 81 / 9%);
+    }
+
+    .range {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+
+    .range input { min-width: 0; }
+
+    .results-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin: 27px 0 16px;
+    }
+
+    .tabs { display: flex; gap: 5px; }
+
+    .tab {
+      padding: 9px 13px;
+      color: #718078;
+      background: transparent;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .tab.active { color: var(--green-dark); background: var(--green-soft); }
+
+    .result-count {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .results-controls {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+    }
+
+    .sort-select {
+      min-height: 36px;
+      padding: 0 10px;
+      color: var(--ink);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 11px;
+    }
+
+    .car-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 17px;
+    }
+
+    .car-card {
+      overflow: hidden;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: 0 5px 18px rgb(22 46 36 / 4%);
+    }
+
+    .car-visual {
+      position: relative;
+      display: grid;
+      place-items: center;
+      height: 174px;
+      overflow: hidden;
+      background: linear-gradient(140deg, #e6ece8, #dce5df);
+    }
+
+    .car-visual::before, .car-visual::after {
+      position: absolute;
+      content: "";
+      border-radius: 50%;
+      background: rgb(255 255 255 / 27%);
+    }
+
+    .car-visual::before { width: 200px; height: 200px; top: -99px; right: -40px; }
+    .car-visual::after { width: 160px; height: 160px; bottom: -123px; left: 18px; }
+
+    .car-emoji {
+      position: relative;
+      z-index: 1;
+      font-size: 94px;
+      line-height: 1;
+      filter: drop-shadow(0 11px 8px rgb(34 53 44 / 13%));
+      transform: translateY(4px);
+    }
+
+    .condition-tag {
+      position: absolute;
+      z-index: 2;
+      top: 12px;
+      left: 12px;
+      padding: 5px 8px;
+      color: #4b5a52;
+      background: rgb(255 255 255 / 88%);
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .watch-button {
+      position: absolute;
+      z-index: 2;
+      top: 10px;
+      right: 10px;
+      display: grid;
+      place-items: center;
+      width: 34px;
+      height: 34px;
+      color: #48554e;
+      background: rgb(255 255 255 / 92%);
+      border: 0;
+      border-radius: 50%;
+      font-size: 19px;
+      line-height: 1;
+    }
+
+    .watch-button:hover, .watch-button.watched { color: #d45852; }
+    .card-content { padding: 15px 16px 14px; }
+
+    .card-title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .car-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 760;
+      letter-spacing: -.45px;
+    }
+
+    .trim { margin: 4px 0 0; color: var(--muted); font-size: 11px; }
+    .price { color: var(--ink); font-size: 20px; font-weight: 780; letter-spacing: -.7px; white-space: nowrap; }
+    .price-change { min-height: 16px; margin-top: 3px; text-align: right; font-size: 10px; font-weight: 700; }
+    .price-change.down { color: #27825f; }
+    .price-change.up { color: #c76b52; }
+
+    .specs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px 13px;
+      margin: 15px 0 13px;
+      color: #627068;
+      font-size: 11px;
+    }
+
+    .spec { display: inline-flex; align-items: center; gap: 5px; }
+    .seller-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 11px;
+      border-top: 1px solid #edf0ed;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .seller-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card-actions { display: flex; gap: 8px; margin-top: 12px; }
+
+    .secondary-button {
+      min-height: 34px;
+      padding: 0 10px;
+      color: var(--green-dark);
+      background: #f0f6f2;
+      border-radius: 7px;
+      font-size: 10px;
+      font-weight: 720;
+    }
+
+    .secondary-button:hover { background: #e5f0e9; }
+    .secondary-button.link { margin-left: auto; color: #596760; background: transparent; }
+    .secondary-button:disabled { cursor: default; opacity: .48; }
+
+    .empty-state {
+      grid-column: 1 / -1;
+      padding: 52px 20px;
+      color: var(--muted);
+      background: #fff;
+      border: 1px dashed #d7dfd9;
+      border-radius: 14px;
+      text-align: center;
+    }
+
+    .empty-state strong { display: block; margin-bottom: 7px; color: var(--ink); font-size: 15px; }
+
+    dialog {
+      width: min(500px, calc(100% - 28px));
+      padding: 0;
+      color: var(--ink);
+      background: #fff;
+      border: 0;
+      border-radius: 15px;
+      box-shadow: 0 24px 80px rgb(15 31 24 / 25%);
+    }
+
+    dialog::backdrop { background: rgb(16 34 26 / 40%); }
+    .dialog-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 21px 14px; }
+    .dialog-header h2 { margin: 0; font-size: 18px; letter-spacing: -.4px; }
+    .close-button { width: 30px; height: 30px; color: #66746d; background: #f1f4f1; border: 0; border-radius: 50%; font-size: 18px; }
+    .dialog-form { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; padding: 4px 21px 21px; }
+    .dialog-form .field.full { grid-column: 1 / -1; }
+    .dialog-form .field input { height: 42px; }
+    .dialog-form .form-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; padding-top: 5px; }
+    .cancel-button { min-height: 42px; padding: 0 14px; color: #596760; background: transparent; border: 0; font-size: 12px; font-weight: 700; }
+    .hint { margin: -4px 0 2px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .price-form { display: grid; gap: 13px; padding: 4px 21px 21px; }
+    .price-form .field input { height: 42px; }
+    .form-feedback { min-height: 16px; margin: -5px 0 0; color: #b34e41; font-size: 11px; }
+    .price-form .form-actions { display: flex; justify-content: flex-end; gap: 8px; }
+    .history-list { display: grid; gap: 9px; margin: 0; padding: 4px 21px 21px; list-style: none; }
+    .history-list li { display: flex; justify-content: space-between; gap: 12px; padding: 11px 12px; background: #f5f8f5; border-radius: 8px; font-size: 12px; }
+    .history-list li span:last-child { font-weight: 750; }
+    .history-empty { padding: 4px 21px 21px; color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 1000px) {
+      .filters { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .car-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 650px) {
+      .topbar { height: 62px; padding: 0 18px; }
+      .topbar-note { display: none; }
+      .page { width: calc(100% - 32px); padding-top: 27px; }
+      .hero { align-items: flex-start; flex-direction: column; gap: 17px; }
+      .primary-button { width: 100%; }
+      .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .car-grid { grid-template-columns: 1fr; }
+      .car-visual { height: 190px; }
+      .results-head { align-items: flex-start; flex-direction: column; gap: 8px; }
+      .dialog-form { grid-template-columns: 1fr; }
+      .dialog-form .field.full, .dialog-form .form-actions { grid-column: auto; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">M</span> motorlisto</div>
+    <div class="topbar-note">Tu próximo coche, al precio adecuado.</div>
+  </header>
+
+  <main class="page">
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">Ofertas de ocasión</p>
+        <h1 id="page-title">Encuentra tu próximo coche.</h1>
+        <p class="subtitle">Filtra anuncios y sigue los cambios de precio de los que te interesan.</p>
+      </div>
+      <button class="primary-button" id="add-offer" type="button"><span aria-hidden="true">＋</span> Añadir oferta</button>
+    </section>
+
+    <aside class="notice">
+      <span class="notice-icon" aria-hidden="true">●</span>
+      <div><strong>Modo demostración.</strong> Los anuncios de ejemplo y sus precios no proceden de una búsqueda en internet. Puedes añadir ofertas manualmente y guardar su evolución en este navegador; para rastrear portales automáticamente hace falta conectar sus fuentes de datos.</div>
+    </aside>
+
+    <section class="filter-panel" aria-labelledby="filter-title">
+      <div class="filter-heading">
+        <h2 id="filter-title">Afina tu búsqueda</h2>
+        <button class="text-button" id="clear-filters" type="button">Limpiar filtros</button>
+      </div>
+      <div class="filters">
+        <div class="field"><label for="filter-brand">Marca</label><select id="filter-brand"><option value="">Todas las marcas</option></select></div>
+        <div class="field"><label for="filter-model">Modelo</label><select id="filter-model"><option value="">Todos los modelos</option></select></div>
+        <div class="field"><label>Año</label><div class="range"><input id="year-min" type="number" min="2010" max="2026" placeholder="Desde" aria-label="Año desde"><input id="year-max" type="number" min="2010" max="2026" placeholder="Hasta" aria-label="Año hasta"></div></div>
+        <div class="field"><label for="km-max">Kilómetros máximos</label><input id="km-max" type="number" min="0" placeholder="Sin límite"></div>
+        <div class="field"><label>Precio (€)</label><div class="range"><input id="price-min" type="number" min="0" placeholder="Desde" aria-label="Precio mínimo"><input id="price-max" type="number" min="0" placeholder="Hasta" aria-label="Precio máximo"></div></div>
+      </div>
+    </section>
+
+    <section aria-label="Anuncios">
+      <div class="results-head">
+        <div class="tabs" role="tablist" aria-label="Tipo de anuncios">
+          <button class="tab active" id="all-tab" type="button" role="tab" aria-selected="true">Todos los anuncios</button>
+          <button class="tab" id="watch-tab" type="button" role="tab" aria-selected="false">En seguimiento <span id="watch-count"></span></button>
+        </div>
+        <div class="results-controls">
+          <div class="result-count" id="result-count" aria-live="polite"></div>
+          <label class="sr-only" for="sort-price">Ordenar anuncios</label>
+          <select class="sort-select" id="sort-price">
+            <option value="">Ordenar por precio</option>
+            <option value="asc">Precio: menor a mayor</option>
+            <option value="desc">Precio: mayor a menor</option>
+          </select>
+        </div>
+      </div>
+      <div class="car-grid" id="car-grid"></div>
+    </section>
+  </main>
+
+  <dialog id="offer-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-header">
+      <h2 id="dialog-title">Añadir una oferta</h2>
+      <button class="close-button" id="close-dialog" type="button" aria-label="Cerrar">×</button>
+    </div>
+    <form class="dialog-form" id="offer-form">
+      <div class="field"><label for="offer-brand">Marca</label><input id="offer-brand" name="brand" required maxlength="35" placeholder="Ej. Toyota"></div>
+      <div class="field"><label for="offer-model">Modelo</label><input id="offer-model" name="model" required maxlength="45" placeholder="Ej. Corolla"></div>
+      <div class="field"><label for="offer-year">Año</label><input id="offer-year" name="year" type="number" required min="1900" max="2026" placeholder="2022"></div>
+      <div class="field"><label for="offer-km">Kilómetros</label><input id="offer-km" name="km" type="number" required min="0" placeholder="45000"></div>
+      <div class="field"><label for="offer-price">Precio (€)</label><input id="offer-price" name="price" type="number" required min="1" placeholder="21900"></div>
+      <div class="field"><label for="offer-location">Ubicación</label><input id="offer-location" name="location" maxlength="60" placeholder="Madrid"></div>
+      <div class="field full"><label for="offer-url">Enlace al anuncio</label><input id="offer-url" name="url" type="url" placeholder="https://..."></div>
+      <p class="hint full">Añade los datos del anuncio. La app guardará el precio actual y podrás registrar cambios cuando vuelvas a comprobarlo.</p>
+      <div class="form-actions">
+        <button class="cancel-button" id="cancel-dialog" type="button">Cancelar</button>
+        <button class="primary-button" type="submit">Guardar oferta</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="price-dialog" aria-labelledby="price-dialog-title">
+    <div class="dialog-header">
+      <h2 id="price-dialog-title">Registrar precio</h2>
+      <button class="close-button" id="close-price-dialog" type="button" aria-label="Cerrar">×</button>
+    </div>
+    <form class="price-form" id="price-form">
+      <p class="hint" id="price-offer-name"></p>
+      <div class="field"><label for="new-price">Precio comprobado (€)</label><input id="new-price" name="price" type="number" required min="1" step="1"></div>
+      <p class="form-feedback" id="price-feedback" role="status"></p>
+      <div class="form-actions">
+        <button class="cancel-button" id="cancel-price-dialog" type="button">Cancelar</button>
+        <button class="primary-button" type="submit">Guardar precio</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="history-dialog" aria-labelledby="history-title">
+    <div class="dialog-header">
+      <h2 id="history-title">Evolución del precio</h2>
+      <button class="close-button" id="close-history-dialog" type="button" aria-label="Cerrar">×</button>
+    </div>
+    <ul class="history-list" id="history-list"></ul>
+  </dialog>
+
+  <script>
+    const STORAGE_KEY = "motorlisto-offers-v1";
+    const initialOffers = [
+      { id: "demo-1", brand: "Toyota", model: "Corolla", trim: "1.8 Hybrid Active", year: 2022, km: 38500, price: 21900, location: "Madrid", seller: "Concesionario verificado", color: "#d9e7df", icon: "🚘", url: "", watched: false, history: [{ price: 22400, date: "2026-10-25" }, { price: 21900, date: "2026-10-31" }] },
+      { id: "demo-2", brand: "SEAT", model: "León", trim: "1.5 TSI Style", year: 2021, km: 51200, price: 18490, location: "Valencia", seller: "Auto Valencia", color: "#e9ded7", icon: "🚗", url: "", watched: false, history: [{ price: 18490, date: "2026-10-28" }] },
+      { id: "demo-3", brand: "Volkswagen", model: "Golf", trim: "2.0 TDI Life", year: 2022, km: 42700, price: 23900, location: "Barcelona", seller: "Das WeltAuto", color: "#dce3eb", icon: "🚙", url: "", watched: false, history: [{ price: 24200, date: "2026-10-24" }, { price: 23900, date: "2026-10-30" }] },
+      { id: "demo-4", brand: "Hyundai", model: "Tucson", trim: "1.6 TGDI Klass", year: 2020, km: 64800, price: 21950, location: "Sevilla", seller: "Ocasión Sur", color: "#e3dfe9", icon: "🚙", url: "", watched: false, history: [{ price: 21950, date: "2026-10-29" }] },
+      { id: "demo-5", brand: "Peugeot", model: "2008", trim: "PureTech Allure", year: 2021, km: 33000, price: 19700, location: "Zaragoza", seller: "Particular", color: "#e9e5d7", icon: "🚗", url: "", watched: false, history: [{ price: 19900, date: "2026-10-20" }, { price: 19700, date: "2026-10-27" }] },
+      { id: "demo-6", brand: "BMW", model: "Serie 1", trim: "118i Advantage", year: 2019, km: 72000, price: 20500, location: "Málaga", seller: "Costa Motor", color: "#d9e4e8", icon: "🚘", url: "", watched: false, history: [{ price: 20500, date: "2026-10-26" }] }
+    ];
+
+    const $ = (selector) => document.querySelector(selector);
+    const grid = $("#car-grid");
+    const filters = {
+      brand: $("#filter-brand"),
+      model: $("#filter-model"),
+      yearMin: $("#year-min"),
+      yearMax: $("#year-max"),
+      kmMax: $("#km-max"),
+      priceMin: $("#price-min"),
+      priceMax: $("#price-max")
+    };
+    let activeTab = "all";
+    let pendingPriceOfferId = null;
+    let offers = loadOffers();
+
+    function loadOffers() {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return structuredClone(initialOffers);
+        const parsed = JSON.parse(saved);
+        if (!Array.isArray(parsed) || parsed.some((offer) => !offer || typeof offer.id !== "string" || !Array.isArray(offer.history))) {
+          throw new Error("Los datos guardados no tienen el formato esperado.");
+        }
+        return parsed;
+      } catch (error) {
+        console.error("No se pudieron cargar las ofertas guardadas.", error);
+        return structuredClone(initialOffers);
+      }
+    }
+
+    function saveOffers() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(offers));
+      } catch (error) {
+        console.error("No se pudieron guardar las ofertas en este navegador.", error);
+        alert("No se han podido guardar los cambios. Comprueba el espacio disponible o la configuración del navegador.");
+      }
+    }
+
+    function euro(value) {
+      return new Intl.NumberFormat("es-ES", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(value);
+    }
+
+    function number(value) {
+      return new Intl.NumberFormat("es-ES").format(value);
+    }
+
+    function populateBrands() {
+      const currentBrand = filters.brand.value;
+      const brands = [...new Set(offers.map((offer) => offer.brand))].sort((a, b) => a.localeCompare(b, "es"));
+      filters.brand.innerHTML = '<option value="">Todas las marcas</option>' + brands.map((brand) => `<option value="${escapeHtml(brand)}">${escapeHtml(brand)}</option>`).join("");
+      filters.brand.value = brands.includes(currentBrand) ? currentBrand : "";
+      populateModels();
+    }
+
+    function populateModels() {
+      const currentModel = filters.model.value;
+      const matching = offers.filter((offer) => !filters.brand.value || offer.brand === filters.brand.value);
+      const models = [...new Set(matching.map((offer) => offer.model))].sort((a, b) => a.localeCompare(b, "es"));
+      filters.model.innerHTML = '<option value="">Todos los modelos</option>' + models.map((model) => `<option value="${escapeHtml(model)}">${escapeHtml(model)}</option>`).join("");
+      filters.model.value = models.includes(currentModel) ? currentModel : "";
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
+    }
+
+    function latestChange(offer) {
+      if (offer.history.length < 2) return null;
+      const latest = offer.history[offer.history.length - 1].price;
+      const previous = offer.history[offer.history.length - 2].price;
+      return { amount: latest - previous, previous };
+    }
+
+    function render() {
+      populateBrands();
+      const filtered = offers.filter((offer) => {
+        const year = Number(offer.year);
+        const km = Number(offer.km);
+        const price = Number(offer.price);
+        return (!filters.brand.value || offer.brand === filters.brand.value)
+          && (!filters.model.value || offer.model === filters.model.value)
+          && (!filters.yearMin.value || year >= Number(filters.yearMin.value))
+          && (!filters.yearMax.value || year <= Number(filters.yearMax.value))
+          && (!filters.kmMax.value || km <= Number(filters.kmMax.value))
+          && (!filters.priceMin.value || price >= Number(filters.priceMin.value))
+          && (!filters.priceMax.value || price <= Number(filters.priceMax.value))
+          && (activeTab !== "watch" || offer.watched);
+      });
+      const sortOrder = $("#sort-price").value;
+      if (sortOrder) {
+        filtered.sort((a, b) => sortOrder === "asc"
+          ? Number(a.price) - Number(b.price)
+          : Number(b.price) - Number(a.price));
+      }
+
+      $("#watch-count").textContent = offers.filter((offer) => offer.watched).length
+        ? `(${offers.filter((offer) => offer.watched).length})` : "";
+      $("#result-count").textContent = `${filtered.length} ${filtered.length === 1 ? "anuncio" : "anuncios"}`;
+
+      if (!filtered.length) {
+        grid.innerHTML = `<div class="empty-state"><strong>${activeTab === "watch" ? "Aún no sigues ninguna oferta" : "No hay anuncios con estos filtros"}</strong>${activeTab === "watch" ? "Guarda un anuncio con el corazón para seguir su precio." : "Prueba a cambiar o limpiar los filtros."}</div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map((offer) => {
+        const change = latestChange(offer);
+        const changeLabel = change
+          ? `<div class="price-change ${change.amount < 0 ? "down" : change.amount > 0 ? "up" : ""}">${change.amount < 0 ? "↓ Bajó " : change.amount > 0 ? "↑ Subió " : "Sin cambios "}${change.amount !== 0 ? euro(Math.abs(change.amount)) : ""}</div>`
+          : `<div class="price-change"></div>`;
+        const safeUrl = safeLink(offer.url);
+        return `<article class="car-card">
+          <div class="car-visual" style="background:linear-gradient(140deg,${escapeHtml(offer.color || "#e4ebe6")},#f3f5f2)">
+            <span class="condition-tag">Ocasión</span>
+            <span class="car-emoji" aria-hidden="true">${escapeHtml(offer.icon || "🚗")}</span>
+            <button class="watch-button ${offer.watched ? "watched" : ""}" type="button" data-action="watch" data-id="${escapeHtml(offer.id)}" aria-label="${offer.watched ? "Dejar de seguir" : "Seguir"} ${escapeHtml(offer.brand)} ${escapeHtml(offer.model)}" aria-pressed="${offer.watched}">${offer.watched ? "♥" : "♡"}</button>
+          </div>
+          <div class="card-content">
+            <div class="card-title-row">
+              <div><h3 class="car-title">${escapeHtml(offer.brand)} ${escapeHtml(offer.model)}</h3><p class="trim">${escapeHtml(offer.trim || "Anuncio añadido")}</p></div>
+              <div><div class="price">${euro(Number(offer.price))}</div>${changeLabel}</div>
+            </div>
+            <div class="specs">
+              <span class="spec"><span aria-hidden="true">▦</span>${escapeHtml(offer.year)}</span>
+              <span class="spec"><span aria-hidden="true">↗</span>${number(Number(offer.km))} km</span>
+              <span class="spec"><span aria-hidden="true">⌖</span>${escapeHtml(offer.location || "Ubicación no indicada")}</span>
+            </div>
+            <div class="seller-line"><span class="seller-name">${escapeHtml(offer.seller || "Anuncio guardado por ti")}</span><span>${offer.watched ? "En seguimiento" : "Precio de hoy"}</span></div>
+            <div class="card-actions">
+              <button class="secondary-button" type="button" data-action="history" data-id="${escapeHtml(offer.id)}">Ver evolución (${offer.history.length})</button>
+              <button class="secondary-button" type="button" data-action="update" data-id="${escapeHtml(offer.id)}" ${offer.watched ? "" : "disabled"}>Registrar precio</button>
+              ${safeUrl ? `<a class="secondary-button link" href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">Ver anuncio ↗</a>` : ""}
+            </div>
+          </div>
+        </article>`;
+      }).join("");
+    }
+
+    function safeLink(value) {
+      if (!value) return "";
+      try {
+        const parsed = new URL(value);
+        return parsed.protocol === "https:" || parsed.protocol === "http:" ? parsed.href : "";
+      } catch {
+        return "";
+      }
+    }
+
+    function updateOffer(id, updates) {
+      offers = offers.map((offer) => offer.id === id ? { ...offer, ...updates } : offer);
+      saveOffers();
+      render();
+    }
+
+    function registerPrice(id) {
+      const offer = offers.find((item) => item.id === id);
+      if (!offer) return;
+      pendingPriceOfferId = id;
+      $("#price-offer-name").textContent = `${offer.brand} ${offer.model} · Precio actual: ${euro(Number(offer.price))}`;
+      $("#new-price").value = String(offer.price);
+      $("#price-feedback").textContent = "";
+      $("#price-dialog").showModal();
+    }
+
+    function showHistory(id) {
+      const offer = offers.find((item) => item.id === id);
+      if (!offer) return;
+      $("#history-title").textContent = `Evolución · ${offer.brand} ${offer.model}`;
+      $("#history-list").innerHTML = offer.history.slice().reverse().map((item) => {
+        const date = new Date(`${item.date}T12:00:00`).toLocaleDateString("es-ES");
+        return `<li><span>${escapeHtml(date)}</span><span>${euro(Number(item.price))}</span></li>`;
+      }).join("");
+      $("#history-dialog").showModal();
+    }
+
+    filters.brand.addEventListener("change", () => { populateModels(); render(); });
+    filters.model.addEventListener("change", render);
+    [filters.yearMin, filters.yearMax, filters.kmMax, filters.priceMin, filters.priceMax].forEach((input) => input.addEventListener("input", render));
+    $("#sort-price").addEventListener("change", render);
+    $("#clear-filters").addEventListener("click", () => {
+      Object.values(filters).forEach((input) => { input.value = ""; });
+      render();
+    });
+
+    $("#all-tab").addEventListener("click", () => {
+      activeTab = "all";
+      $("#all-tab").classList.add("active");
+      $("#all-tab").setAttribute("aria-selected", "true");
+      $("#watch-tab").classList.remove("active");
+      $("#watch-tab").setAttribute("aria-selected", "false");
+      render();
+    });
+    $("#watch-tab").addEventListener("click", () => {
+      activeTab = "watch";
+      $("#watch-tab").classList.add("active");
+      $("#watch-tab").setAttribute("aria-selected", "true");
+      $("#all-tab").classList.remove("active");
+      $("#all-tab").setAttribute("aria-selected", "false");
+      render();
+    });
+
+    grid.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-action]");
+      if (!button) return;
+      const offer = offers.find((item) => item.id === button.dataset.id);
+      if (!offer) return;
+      if (button.dataset.action === "watch") updateOffer(offer.id, { watched: !offer.watched });
+      if (button.dataset.action === "history") showHistory(offer.id);
+      if (button.dataset.action === "update") registerPrice(offer.id);
+    });
+
+    const dialog = $("#offer-dialog");
+    $("#add-offer").addEventListener("click", () => dialog.showModal());
+    $("#close-dialog").addEventListener("click", () => dialog.close());
+    $("#cancel-dialog").addEventListener("click", () => dialog.close());
+    const priceDialog = $("#price-dialog");
+    $("#close-price-dialog").addEventListener("click", () => priceDialog.close());
+    $("#cancel-price-dialog").addEventListener("click", () => priceDialog.close());
+    $("#close-history-dialog").addEventListener("click", () => $("#history-dialog").close());
+    $("#new-price").addEventListener("input", () => { $("#price-feedback").textContent = ""; });
+    $("#price-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const offer = offers.find((item) => item.id === pendingPriceOfferId);
+      const price = Number($("#new-price").value);
+      if (!offer || !Number.isFinite(price) || price <= 0) return;
+      if (price === Number(offer.price)) {
+        $("#price-feedback").textContent = "El precio no ha cambiado; no se ha añadido al historial.";
+        return;
+      }
+      updateOffer(offer.id, {
+        price,
+        history: [...offer.history, { price, date: new Date().toISOString().slice(0, 10) }]
+      });
+      pendingPriceOfferId = null;
+      priceDialog.close();
+    });
+    $("#offer-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = new FormData(event.currentTarget);
+      const offer = {
+        id: `offer-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        brand: String(data.get("brand")).trim(),
+        model: String(data.get("model")).trim(),
+        trim: "Anuncio añadido",
+        year: Number(data.get("year")),
+        km: Number(data.get("km")),
+        price: Number(data.get("price")),
+        location: String(data.get("location")).trim(),
+        seller: "Anuncio guardado por ti",
+        color: "#e4ebe6",
+        icon: "🚗",
+        url: safeLink(String(data.get("url")).trim()),
+        watched: true,
+        history: [{ price: Number(data.get("price")), date: new Date().toISOString().slice(0, 10) }]
+      };
+      offers = [offer, ...offers];
+      saveOffers();
+      event.currentTarget.reset();
+      dialog.close();
+      activeTab = "all";
+      $("#all-tab").click();
+      grid.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+
+    render();
+  </script>
+</body>
+</html>
